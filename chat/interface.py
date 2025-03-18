@@ -1,6 +1,6 @@
 import streamlit as st
 from models.database import Session, ChatSession, ChatMessage
-from chat.logic import FinancialAdvisor
+from chat.logic import PersonalizedFinancialAssistant
 import datetime
 
 def get_user_session_count(user_id: int) -> int:
@@ -23,13 +23,11 @@ def create_new_session():
         db.add(new_session)
         db.commit()
         
-        # Update session list and current session
         st.session_state.sessions = [new_session] + st.session_state.sessions
         st.session_state.current_session = new_session.id
         
     finally:
         db.close()
-    # Removed st.rerun() here
 
 def load_user_sessions():
     """Load user-specific sessions from database"""
@@ -93,7 +91,9 @@ def render_chat_interface():
                     db.add(user_msg)
                     
                     # Get and save bot response
-                    response = FinancialAdvisor().get_response(prompt)
+                    advisor = PersonalizedFinancialAssistant(st.session_state.user_id)
+                    response = advisor.get_response(prompt)
+                    
                     bot_msg = ChatMessage(
                         session_id=st.session_state.current_session,
                         content=response,
@@ -104,5 +104,3 @@ def render_chat_interface():
                     st.rerun()
                 finally:
                     db.close()
-        else:
-            create_new_session()

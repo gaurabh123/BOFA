@@ -1,1 +1,31 @@
+# Python-related
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environment
 myenv/
+*.env
+*.venv
+
+# Streamlit-related
+.streamlit/
+
+# Database-related
+*.sqlite3
+*.db
+
+# Logs and temporary files
+*.log
+*.tmp
+*.bak
+*.swp
+
+# IDE-specific
+.vscode/
+
+
+# OS-specific
+.DS_Store
+Thumbs.db

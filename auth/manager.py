@@ -2,9 +2,9 @@ from models.database import User, UserSession, Session
 import bcrypt
 import secrets
 from datetime import datetime, timedelta
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 def authenticate_user(username: str, password: str) -> int:
-    """Returns user ID if authenticated, else 0"""
     db = Session()
     try:
         user = db.query(User).filter_by(username=username).first()
@@ -14,34 +14,36 @@ def authenticate_user(username: str, password: str) -> int:
     finally:
         db.close()
 
-def register_user(username: str, password: str) -> bool:
+def register_user(username: str, password: str, financial_data: dict) -> bool:
     db = Session()
     try:
         if db.query(User).filter_by(username=username).first():
             return False
             
         hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
-        new_user = User(username=username, password_hash=hashed)
+        new_user = User(
+            username=username,
+            password_hash=hashed,
+            financial_profile=financial_data
+        )
         db.add(new_user)
         db.commit()
         return True
-    except:
+    except IntegrityError:
         db.rollback()
         return False
+    except Exception as e:
+        db.rollback()
+        raise RuntimeError(f"Registration error: {str(e)}") from e
     finally:
         db.close()
 
 def create_session(user_id: int) -> str:
-    """Create and return new session token"""
     db = Session()
     try:
-        # Delete existing sessions
         db.query(UserSession).filter_by(user_id=user_id).delete()
-        
-        # Generate new token
         token = secrets.token_urlsafe(64)
         expires = datetime.utcnow() + timedelta(hours=24)
-        
         session = UserSession(
             session_token=token,
             user_id=user_id,
@@ -54,7 +56,6 @@ def create_session(user_id: int) -> str:
         db.close()
 
 def validate_session(token: str) -> int:
-    """Validate session token and return user ID if valid"""
     db = Session()
     try:
         session = db.query(UserSession).filter_by(session_token=token).first()
